@@ -64,7 +64,7 @@ export default function LoginPage() {
       {/* Left image block */}
       <div className="w-[600px] h-[500px] rounded-2xl shadow-2xl overflow-hidden hidden md:block">
         <img
-          src="/login-image3.jpg"
+          src="/banner01.jpg"
           alt="Login Visual"
           className="w-full h-full object-cover"
         />

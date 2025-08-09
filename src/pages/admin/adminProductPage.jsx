@@ -113,6 +113,7 @@ export default function AdminProductsPage() {
 															image: item.image,
 															labelledPrice: item.labelledPrice,
 															price: item.price,
+															wholesalePrice: item.wholesalePrice,
 															stock: item.stock,
 														},
 													})
