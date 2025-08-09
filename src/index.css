@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&family=Play:wght@400;700&family=Space+Grotesk:wght@300..700&display=swap');
+@import "tailwindcss";
+
+:root {
+    --color-primary: #FBFBFB;
+    --color-secondary: #393E46;
+    --color-accent: #C5BAFF;
+    --font-fancy: 'Dosis', sans-serif;
+    --font-main: 'Space Grotesk', sans-serif;
+}
