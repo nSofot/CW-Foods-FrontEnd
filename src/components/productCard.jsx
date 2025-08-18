@@ -6,6 +6,9 @@ export default function ProductCard({ product }) {
     const {
         productId,
         name,
+        categoryName,
+        brandName,
+        uomName,
         description,
         image,
         price,
@@ -40,10 +43,12 @@ export default function ProductCard({ product }) {
 
             {/* -------- product details -------- */}
             <div className="p-4 flex flex-col flex-1">
+                <h1 className="text-lg font-semibold mb-1">
+                    {brandName} {categoryName}</h1>
                 <h2 className="text-base font-semibold truncate">{name}</h2>
 
                 <p className="text-sm text-gray-600 mb-2 h-[42px] overflow-hidden">
-                    {description || "No description available."}
+                    {description || ""}
                 </p>
 
                 {/* price */}
