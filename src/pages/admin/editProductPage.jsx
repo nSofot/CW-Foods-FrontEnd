@@ -150,7 +150,7 @@ export default function EditProductPage() {
 				</div>
 			</div>
 
-			<div className="bg-white w-full h-full px-10 py-6 shadow rounded-xl border border-gray-200 flex flex-col">
+			<div className="bg-white w-full px-10 py-6 shadow rounded-xl border border-gray-200 flex flex-col">
 
 				<div className=" flex justify-between">				
 					{/* Left Column */}
@@ -210,7 +210,7 @@ export default function EditProductPage() {
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
 							<textarea
-							rows="4"
+							rows="2"
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
 							className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
