@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import ImageSlider from "../../components/imageSlider";
@@ -9,25 +9,64 @@ import { addToCart, getCart } from "../../utils/cart";
 export default function ProductOverview() {
     const params = useParams();
     const productId = params.Id
-    const [status, setStatus] = useState("loading")//loading, success, error
+    const [status, setStatus] = useState("loading")
     const [product, setProduct] = useState(null)
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [uoms, setUoms] = useState([]);
     const navigate = useNavigate();
 
-    useEffect(
-        () => {
-            axios.get(import.meta.env.VITE_BACKEND_URL + "/api/products/" + productId).then(
-                (res) => {
-                    setProduct(res.data);
-                    setStatus("success");
-                }
-            ).catch(
-                (error) => {
-                    setStatus("error");
-                    toast.error("Error fetching product details")
-                }
-            )
-        }
-    , []);
+    // useEffect(
+    //     () => {
+    //         const proRes = axios.get(import.meta.env.VITE_BACKEND_URL + "/api/products/" + productId).then(
+    //             (res) => {
+    //                 setProduct(res.data);
+    //                 setStatus("success");
+    //             }
+    //         ).catch(
+    //             (error) => {
+    //                 setStatus("error");
+    //                 toast.error("Error fetching product details")
+    //             }
+    //         )
+    //     }
+    // , []);
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`);
+                const catRes = await axios.get(import.meta.env.VITE_BACKEND_URL + "/api/category");
+                const braRes = await axios.get(import.meta.env.VITE_BACKEND_URL + "/api/brand");
+                const uomRes = await axios.get(import.meta.env.VITE_BACKEND_URL + "/api/uom");
+
+                setCategories(catRes.data);
+                setBrands(braRes.data);
+                setUoms(uomRes.data);
+                setProduct(response.data);
+                setStatus("success");
+            } catch (error) {
+                setStatus("error");
+                toast.error("Error fetching product details");
+            }
+        };
+        fetchProduct();
+    }, []);
+
+    function getCategoryName(categoryId) {  
+        const category = categories.find(p => p.categoryId === categoryId);
+        return category ? category.categoryName : categoryId;
+    }
+
+   function getBrandName(brandId) {      
+        const brand = brands.find(p => p.brandId === brandId);
+        return brand ? brand.brandName : brandId;
+    }
+
+    function getUomName(uomId) {      
+        const uom = uoms.find(p => p.uomId === uomId);
+        return uom ? uom.uomName : uomId;
+    }
+
 
     return (
         <>
@@ -47,11 +86,13 @@ export default function ProductOverview() {
                     </div>
                     <div className="w-full md:w-[50%] h-full flex justify-center items-center">
                         <div className="w-[400px] h-[400px] flex flex-col item-center">
-                            <h1 className="hidden md:block w-full text-center text-2xl font-semibold text-secondary">{product.name}
+                            <h1 className="hidden md:block w-full text-center text-2xl font-semibold text-secondary">{getBrandName(product.brandId)} {getCategoryName(product.categoryId)}</h1>    
+                            <h1 className="hidden md:block w-full text-center text-2xl font-semibold text-secondary">{product.name}</h1>
+                            <h1 className="hidden md:block w-full text-center text-xl font-semibold text-secondary">
                                 {
                                     product.altName.map((altName, index) => {
                                         return (
-                                            <span key={index} className="w-full text-center text-2xl font-semibold text-gray-600">{" | " + altName}</span>
+                                            <span key={index} className="w-full text-center text-xl font-semibold text-gray-600">{" | " + altName}</span>
                                         )
                                     })
                                 }

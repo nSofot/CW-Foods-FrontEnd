@@ -6,6 +6,9 @@ import toast from "react-hot-toast";
 
 export default function ProductPage() {
 	const [products, setProducts] = useState([]);
+	const [categories, setCategories] = useState([]);
+	const [brands, setBrands] = useState([]);
+	const [uoms, setUoms] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [query, setQuery] = useState("");
 
@@ -13,8 +16,28 @@ export default function ProductPage() {
 	useEffect(() => {
 		const fetchProducts = async () => {
 			try {
-				const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/search?query=${query}`)
-				setProducts(response.data);
+				const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/search?query=${query}`);
+				const catRes = axios.get(import.meta.env.VITE_BACKEND_URL + "/api/category");
+				const braRes = axios.get(import.meta.env.VITE_BACKEND_URL + "/api/brand");
+				const uomRes = axios.get(import.meta.env.VITE_BACKEND_URL + "/api/uom");
+
+				const categories = (await catRes).data;
+				const brands = (await braRes).data;
+				const uoms = (await uomRes).data;
+
+				// enrich products with names
+				const enrichedProducts = response.data.map((p) => ({
+				...p,
+				categoryName: categories.find((c) => c.categoryId === p.categoryId)?.categoryName || p.categoryId,
+				brandName: brands.find((b) => b.brandId === p.brandId)?.brandName || p.brandId,
+				uomName: uoms.find((u) => u.uomId === p.uomId)?.uomName || p.uomId,
+				}));
+
+				setProducts(enrichedProducts);
+				setCategories(categories);
+				setBrands(brands);
+				setUoms(uoms);
+
 			} catch (err) {
 				console.error("Search request failed:", err);
 				toast.error("Failed to fetch products.");
