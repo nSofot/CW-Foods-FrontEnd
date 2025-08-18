@@ -7,16 +7,24 @@ import mediaUpload from "../../utils/mediaUpload";
 export default function EditProductPage() {
 	const location = useLocation();
 	const navigate = useNavigate();
+	const [isLoading, setIsLoading] = useState(true);
+	const [isUpdating, setIsUpdating] = useState(false);
 
 	const [productId, setProductId] = useState("");
+    const [categoryName, setCategoryName] = useState("");
+    const [brandName, setBrandName] = useState("");
+	const [uomName, setUomName] = useState("");
+	const [uom, setUom] = useState([]);
+    const [uomId, setUomId] = useState("");	
 	const [name, setName] = useState("");
 	const [altNames, setAltNames] = useState("");
 	const [description, setDescription] = useState("");
 	const [image, setImage] = useState([]);
-	const [labelledPrice, setLabelledPrice] = useState("");
-	const [price, setPrice] = useState("");
-	const [wholesalePrice, setWholesalePrice] = useState("");
-	const [stock, setStock] = useState("");
+    const [marketPrice, setMarketPrice] = useState("");
+    const [retailPrice, setRetailPrice] = useState("");
+    const [distributorPrice, setDistributorPrice] = useState("");
+    const [discountedPrice, setDiscountedPrice] = useState("");
+    const [discountRate, setDiscountRate] = useState("");
 
 	const [existingImages, setExistingImages] = useState([]);
 
@@ -25,55 +33,88 @@ export default function EditProductPage() {
 	if (location.state) {
 		const data = location.state;
 		setProductId(data.productId || "");
+		setCategoryName(data.categoryName || "");
+		setBrandName(data.brandName || "");
+		setUomName(data.uomName || "");
+		setUomId(data.uomId || "");
 		setName(data.name || "");
-		setAltNames(Array.isArray(data.altNames) ? data.altNames.join(",") : "");
+		setAltNames(Array.isArray(data.altNames) ? data.altNames.join(", ") : "");
 		setDescription(data.description || "");
-		setLabelledPrice(data.labelledPrice || "");
-		setPrice(data.price || "");
-		setWholesalePrice(data.wholesalePrice || "");
-		setStock(data.stock || "");
+		setMarketPrice(data.labelledPrice || "");
+		setDiscountedPrice(data.price || "");
+		setRetailPrice(data.retailPrice || "");
+		setDistributorPrice(data.distributorPrice || "");
+		setDiscountRate(data.discountRate || "");
 		setExistingImages(data.image || []);
 	}
 	}, [location.state]);
 
+    useEffect(() => {
+        if (!isLoading) return;
+
+            const fetchInitialData = async () => {
+                try {
+                    const token = localStorage.getItem("token");
+                    const config = {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    };
+
+                    const [uomRes] = await Promise.all([
+                        axios.get(import.meta.env.VITE_BACKEND_URL + "/api/uom", config),
+                    ]);
+
+                    setUom(uomRes.data);
+
+                } catch (error) {
+                    console.error("Failed to fetch initial data:", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+        fetchInitialData();
+
+    }, [isLoading]);
 
 	async function updateProduct() {
-	const token = localStorage.getItem("token");
-	if (!token) {
-		toast.error("Please login first");
-		return;
-	}
-
-	try {
-		let uploadedNewImages = [];
-
-		if (image.length > 0) {
-		const uploadPromises = image.map((img) => mediaUpload(img));
-		uploadedNewImages = await Promise.all(uploadPromises);
+		const token = localStorage.getItem("token");
+		if (!token) {
+			toast.error("Please login first");
+			return;
 		}
 
-		const updatedProduct = {
-			productId,
-			name,
-			altNames: altNames.split(",").map((n) => n.trim()),
-			description,
-			image: [...existingImages, ...uploadedNewImages],
-			labelledPrice,
-			price,
-			wholesalePrice,
-			stock,
-		};
+		try {
+			let uploadedNewImages = [];
 
-		await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`, updatedProduct, {
-		headers: { Authorization: "Bearer " + token },
-		});
+			if (image.length > 0) {
+			const uploadPromises = image.map((img) => mediaUpload(img));
+			uploadedNewImages = await Promise.all(uploadPromises);
+			}
 
-		toast.success("Product updated successfully");
-		navigate("/admin/products");
-	} catch (error) {
-		console.error(error);
-		toast.error(error?.response?.data?.message || "Update failed");
-	}
+			const updatedProduct = {
+				name,
+				altName: altNames.split(",").map((n) => n.trim()),
+				description,
+				image: [...existingImages, ...uploadedNewImages],
+				labelledPrice: marketPrice,
+				price: discountedPrice,
+				retailPrice,
+				distributorPrice,
+				discountRate,
+			};
+
+			await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/products/${productId}`, updatedProduct, {
+			headers: { Authorization: "Bearer " + token },
+			});
+
+			toast.success("Product updated successfully");
+			navigate(-1);
+		} catch (error) {
+			console.error(error);
+			toast.error(error?.response?.data?.message || "Update failed");
+		}
 	}
 
 	return (
@@ -87,17 +128,25 @@ export default function EditProductPage() {
 				{/* Update Button */}
 				<div className="flex justify-end gap-6">
 					<button
-					onClick={updateProduct}
-					className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-md transition duration-300"
-					>
-					Update Product
+                        disabled={isUpdating}
+                        onClick={async () => {
+                            if (isUpdating) return;
+                            setIsUpdating(true);
+                            const id = toast.loading("Updating product....");
+                            await updateProduct();
+                            toast.dismiss(id);
+                            setIsUpdating(false);
+                        }}
+                        className={`px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-md hover:bg-purple-700 active:bg-purple-800 transition disabled:opacity-50`}
+                    >
+                        {isUpdating ? "Updating..." : "Update Product"}
 					</button>
-					<Link
-						to="/admin/products"
+					<button
+						onClick={() => navigate(-1)}
 						className="bg-red-500 hover:bg-red-600 text-white px-10 py-2 rounded-md text-sm font-medium shadow"
 					>
 						Cancel
-					</Link>
+					</button>
 				</div>
 			</div>
 
@@ -105,23 +154,21 @@ export default function EditProductPage() {
 
 				<div className=" flex justify-between">				
 					{/* Left Column */}
-					<div className="w-[55%] h-full space-y-10">
+					<div className="w-[55%] h-full space-y-6">
+						<div className="w-full flex justify-between">
+							<div className='w-[48%]'>
+								<label className="text-sm font-medium block mb-1">Brand *</label>
+								<span className="px-2 py-2 text-sm font-medium block bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1">{brandName}</span>
+							</div>							
+							<div className='w-[48%]'>
+								<label className="text-sm font-medium block mb-1">Category *</label>
+								<span className="px-2 py-2 text-sm font-medium block bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1">{categoryName}</span>
+							</div>
+						</div>
 
 						<div className="w-full flex justify-between">
-							{/* Product ID */}
-							<div className="w-[20%]">
-								<label className="block text-sm font-medium text-gray-700 mb-1">Product ID</label>
-								<input
-									type="text"
-									disabled
-									value={productId}
-									className="w-full p-2 bg-gray-100 text-sm border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed"
-								/>
-							</div>
-
-							{/* Product Name */}
-							<div className="w-[75%]">
-								<label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+							<div className="w-[68%]">
+								<label className="block text-sm text-gray-700 mb-1">Product Name *</label>
 								<input
 									type="text"
 									value={name}
@@ -130,6 +177,21 @@ export default function EditProductPage() {
 									placeholder="e.g. Apple iPhone 15"
 								/>
 							</div>
+							<div className='w-[28%]'>
+								<label className="text-sm font-medium block mb-1">UOM *</label>
+								<select
+									value={uomId}
+									onChange={(e) => setUomId(e.target.value)}
+									className="w-full text-sm  border border-gray-300 rounded-md p-2 focus:outline-blue-500"
+								>
+									<option value="">Select UOM</option>
+									{uom.map(uoms => (
+									<option key={uoms.uomId} value={uoms.uomId}>
+										{uoms.uomName}
+									</option>
+									))}
+								</select>
+							</div>                                
 						</div>
 
 						{/* Alt Names */}
@@ -140,7 +202,7 @@ export default function EditProductPage() {
 								value={altNames}
 								onChange={(e) => setAltNames(e.target.value)}
 								className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="e.g. iPhone, iPhone 15"
+								placeholder="e.g. Chilli Powder, Red Chilli Powder, Red Chilli, Miris Kudu, මිරිස් කුඩු, மிளகாய் தூள்"
 							/>
 						</div>
 
@@ -157,54 +219,57 @@ export default function EditProductPage() {
 						</div>
 
 						<div className="w-full flex justify-between gap-2">
-							{/* Labelled Price */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Labelled Price</label>
+								<label className="block text-sm font-medium text-gray-700 mb-1">MRP *</label>
 								<input
 									type="number"
-									value={labelledPrice}
-									onChange={(e) => setLabelledPrice(e.target.value)}
+									value={marketPrice}
+									onChange={(e) => setMarketPrice(e.target.value)}
 									className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g. 999.99"
+									placeholder="e.g. 900.00"
 								/>
 							</div>
-
-							{/* Selling Price */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Selling Price</label>
+								<label className="block text-sm font-medium text-gray-700 mb-1">Discounted *</label>
 								<input
 									type="number"
-									value={price}
-									onChange={(e) => setPrice(e.target.value)}
+									value={discountedPrice}
+									onChange={(e) => setDiscountedPrice(e.target.value)}
 									className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g. 899.99"
+									placeholder="e.g. 950.00"
 								/>
 							</div>
-
-							{/* Wholesale Price */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Wholesale Price</label>
+								<label className="block text-sm font-medium text-gray-700 mb-1">Retail *</label>
 								<input
 									type="number"
-									value={wholesalePrice}
-									onChange={(e) => setWholesalePrice(e.target.value)}
+									value={retailPrice}
+									onChange={(e) => setRetailPrice(e.target.value)}
 									className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g. 899.99"
-								/>
-							</div>
-
-							{/* Stock */}
+									placeholder="e.g. 600.00"
+								/>    
+							</div>                          
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+								<label className="block text-sm font-medium text-gray-700 mb-1">Distributor *</label>
 								<input
 									type="number"
-									value={stock}
-									onChange={(e) => setStock(e.target.value)}
+									value={distributorPrice}
+									onChange={(e) => setDistributorPrice(e.target.value)}
 									className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g. 150"
+									placeholder="e.g. 500.00"
 								/>
 							</div>
-						</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">Discount % *</label>
+								<input
+									type="number"
+									value={discountRate}
+									onChange={(e) => setDiscountRate(e.target.value)}
+									className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+									placeholder="e.g. 10"
+								/>
+							</div>                              
+                        </div>
 
 					</div>
 
