@@ -11,6 +11,9 @@ import EditProductPage from "./admin/editProductPage";
 import CategoryPage from "./admin/categoryPage";
 import BrandPage from "./admin/brandPage";
 import UomPage from "./admin/uomPage";
+import LocationPage from "./admin/locationsPage";
+import GrnPage from "./admin/grnPage";
+import StockTransfersPage from "./admin/stockTransfersPage";
 import UsersPage from "./admin/usersPage";
 import AdminOrdersPage from "./admin/adminOrdersPage";
 import ReviewsPage from "./admin/reviewsPage";
@@ -22,7 +25,8 @@ export default function AdminPage() {
     const path = location.pathname;
     const navigate = useNavigate();
     const [status, setStatus] = useState("loading");
-    const [openProducts, setOpenProducts] = useState(false); // closed by default
+    const [openProducts, setOpenProducts] = useState(false);
+    const [openTransactions, setOpenTransactions] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -93,8 +97,27 @@ export default function AdminPage() {
                             <Link className={getClass("category")} to="/admin/category">Category</Link>
                             <Link className={getClass("brand")} to="/admin/brand">Brand</Link>
                             <Link className={getClass("uom")} to="/admin/uom">UOM</Link>
+                            <Link className={getClass("locations")} to="/admin/locations">Locations</Link>
                         </div>
                     )}
+
+                    {/* Transactions menu */}
+                    <button
+                      onClick={() => setOpenTransactions(!openTransactions)}
+                      className="flex justify-between items-center text-purple-800 font-semibold px-3 py-2 rounded hover:bg-purple-100 transition"
+                    >
+                      📦 Transactions
+                      <span>{openTransactions? "▲" : "▼"}</span>
+                    </button>
+                    {openTransactions && (
+                        <div className="ml-4 flex flex-col space-y-1">
+                            <Link className={getClass("grn")} to="/admin/grn">GRN</Link>
+                            <Link className={getClass("sales_invoice")} to="/admin/sales_invoice">Sales Invoice</Link>
+                            <Link className={getClass("stock_transfer")} to="/admin/stock_transfer">Stock Transfers</Link>
+                            <Link className={getClass("stock_adjustment")} to="/admin/stock_adjustment">Stock Adjustment</Link>
+                            <Link className={getClass("goods_returns")} to="/admin/goods_returns">Goods Returns</Link>
+                        </div>
+                    )}                    
 
                     <Link className={getClass("users")} to="/admin/users">👤 Users</Link>
                     <Link className={getClass("orders")} to="/admin/orders">🧾 Orders</Link>
@@ -120,6 +143,9 @@ export default function AdminPage() {
               <Route path="category" element={<CategoryPage />} />
               <Route path="brand" element={<BrandPage />} />
               <Route path="uom" element={<UomPage />} />
+              <Route path="locations" element={<LocationPage />} />
+              <Route path="grn" element={<GrnPage />} />
+              <Route path="stock_transfer" element={<StockTransfersPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="reviews" element={<ReviewsPage />} />
