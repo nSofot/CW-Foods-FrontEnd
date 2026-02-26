@@ -12,7 +12,11 @@ import CategoryPage from "./admin/categoryPage";
 import BrandPage from "./admin/brandPage";
 import UomPage from "./admin/uomPage";
 import LocationPage from "./admin/locationsPage";
+import CustomerPage from "./admin/customerPage";
+import AddCustomerPage from "./admin/addCustomerPage";
+import EditCustomerPage from "./admin/editCustomerPage";
 import GrnPage from "./admin/grnPage";
+import InvoicePage from "./admin/invoicePage";
 import StockTransfersPage from "./admin/stockTransfersPage";
 import UsersPage from "./admin/usersPage";
 import AdminOrdersPage from "./admin/adminOrdersPage";
@@ -26,6 +30,7 @@ export default function AdminPage() {
     const navigate = useNavigate();
     const [status, setStatus] = useState("loading");
     const [openProducts, setOpenProducts] = useState(false);
+    const [openCustomers, setOpenCustomers] = useState(false);
     const [openTransactions, setOpenTransactions] = useState(false);
 
     useEffect(() => {
@@ -101,6 +106,21 @@ export default function AdminPage() {
                         </div>
                     )}
 
+                    {/* Customers menu */}
+                    <button
+                      onClick={() => setOpenCustomers(!openCustomers)}
+                      className="flex justify-between items-center text-purple-800 font-semibold px-3 py-2 rounded hover:bg-purple-100 transition"
+                    >
+                      📦 Customers
+                      <span>{openCustomers ? "▲" : "▼"}</span>
+                    </button>
+                    {openCustomers && (
+                        <div className="ml-4 flex flex-col space-y-1">
+                            <Link className={getClass("customers")} to="/admin/customers">All Customers</Link>
+
+                        </div>
+                    )}
+
                     {/* Transactions menu */}
                     <button
                       onClick={() => setOpenTransactions(!openTransactions)}
@@ -144,7 +164,11 @@ export default function AdminPage() {
               <Route path="brand" element={<BrandPage />} />
               <Route path="uom" element={<UomPage />} />
               <Route path="locations" element={<LocationPage />} />
+              <Route path="customers" element={<CustomerPage />} />
+              <Route path="add-customer" element={<AddCustomerPage />} />
+              <Route path="edit-customer" element={<EditCustomerPage />} />
               <Route path="grn" element={<GrnPage />} />
+              <Route path="sales_invoice" element={<InvoicePage />} />
               <Route path="stock_transfer" element={<StockTransfersPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />

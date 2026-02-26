@@ -166,8 +166,12 @@ export default function AdminProductsPage() {
 									<td className="px-4 py-2 text-right">{item.retailPrice.toFixed(2)}</td>
 									<td className="px-4 py-2 text-right">{item.distributorPrice.toFixed(2)}</td>
 									<td className="px-4 py-2 text-right">{item.discountRate.toFixed(2) + "%"}</td>
-									<td className="px-4 py-2 text-right">
-										{item.stock.map(s => `${s.locationId}: ${s.quantity}`).join(", ")}
+									<td className="px-4 py-2 text-right font-mono">
+										{item.stock.map((s, idx) => (
+											<div key={idx}>
+												{s.locationId}: {s.quantity}
+											</div>
+										))}
 									</td>
 
 									<td className="px-4 py-2">{getUomName(item.uomId)}</td>

@@ -11,9 +11,6 @@ export default function StockTransfersPage() {
     const token = localStorage.getItem("token");
     
     const [trxDetails, setTrxDetails] = useState({
-        supplierId: "",
-        supplierName: "",
-        supplierAddress: "",
         trxDate: new Date().toISOString().split("T")[0],
         referenceNumber: "",
         locationFromId: "",
@@ -69,51 +66,90 @@ export default function StockTransfersPage() {
     const handleProductSelect = (product) => setSelectedProduct(product);
 
     const handleItemChange = (index, field, value) => {
-        const updatedItems = [...trxDetails.items];
-        updatedItems[index][field] = value;
+        setTrxDetails(prev => {
+            const updatedItems = [...prev.items];
+            const item = { ...updatedItems[index] };
 
-        if (field === "quantity" || field === "rate") {
-            const quantity = parseFloat(updatedItems[index].quantity) || 0;
-            const rate = parseFloat(updatedItems[index].rate) || 0;
-            updatedItems[index].amount = quantity * rate;
+            // ✅ Quantity validation against stock
+            if (field === "quantity") {
+            const availableStock =
+                item.stock.find(
+                s => s.locationFromId === prev.locationFromId
+                )?.quantity ?? 0;
+
+            let qty = Number(value) || 0;
+
+            if (qty < 0) qty = 0;
+            if (qty > availableStock) qty = availableStock;
+
+            item.quantity = qty;
+            } 
+            else {
+            item[field] = value;
+            }
+
+            // ✅ Recalculate amount
+            const quantity = Number(item.quantity) || 0;
+            const rate = Number(item.rate) || 0;
+            item.amount = quantity * rate;
+
+            updatedItems[index] = item;
+
+            return { ...prev, items: updatedItems };
+        });
+        };
+
+
+        const addItem = () => {
+        if (!selectedProduct) return;
+
+        const exists = trxDetails.items.find(
+            item => item.productId === selectedProduct.productId
+        );
+
+        if (exists) {
+            alert("Item already added");
+            return;
         }
 
-        setTrxDetails((prev) => ({ ...prev, items: updatedItems }));
-    };
+        // ✅ Compute available stock for current 'From' location
+        const availableStock =
+            Array.isArray(selectedProduct.stock)
+            ? selectedProduct.stock.find(
+                s => s.locationId === trxDetails.locationFromId
+                )?.quantity ?? 0
+            : 0;
 
-    const addItem = () => {
-      if (!selectedProduct) return;
-
-      const exists = trxDetails.items.find(
-          (item) => item.productId === selectedProduct.productId
-      );
-
-      if (exists) {
-          alert("Item already added");
-          return;
-      }
-
-      setTrxDetails((prev) => ({
-          ...prev,
-          items: [
+        setTrxDetails(prev => ({
+            ...prev,
+            items: [
             ...prev.items,
             {
                 productId: selectedProduct.productId,
-                image: selectedProduct.image[0] ? selectedProduct.image[0] : "",
+                image: selectedProduct.image?.[0] ?? "",
                 name: selectedProduct.name,
                 categoryName: selectedProduct.categoryName,
                 brandName: selectedProduct.brandName,
-                quantity: "",
+                quantity: "",          // initial empty
                 unit: selectedProduct.uomName,
-                rate: selectedProduct.averageCost,
-                amount: 0
+                rate: selectedProduct.price,
+                amount: 0,
+                availableStock,       // ✅ store available stock for UI validation
+                stock: Array.isArray(selectedProduct.stock)
+                ? selectedProduct.stock.map(s => ({
+                    locationFromId: s.locationId,
+                    quantity: Number(s.quantity) || 0
+                    }))
+                : []
             }
-          ]
+            ]
         }));
 
         setSelectedProduct(null);
         setShowProduct(false);
     };
+
+
 
     const removeItem = (index) => {
         const updatedItems = trxDetails.items.filter((_, i) => i !== index);
@@ -170,19 +206,19 @@ export default function StockTransfersPage() {
         if (!validateForm()) return;
 
         setIsSubmitting(true);
-        const toastId = toast.loading("GRN Submitting...");
-        const trxType = "grn";
+        const toastId = toast.loading("Transfer Submitting...");
+        const trxType = "transfer";
         let newTrxId = null;
 
         // ✅ await axios.post(...); 
         try {
-            // 1️⃣ Add GRN 
+            // 1️⃣ From Transection 
             try {
                 const grnData = {
                     transactionType: trxType,
                     transactionDate: trxDetails.trxDate,
                     locationId: trxDetails.locationFromId,
-                    supplierCustomerId: trxDetails.supplierId,
+                    supplierCustomerId: trxDetails.locationToId,
                     description: trxDetails.referenceNumber,
                     isAdded: true,
                     totalAmount: trxDetails.trxTotal,
@@ -217,10 +253,8 @@ export default function StockTransfersPage() {
                     console.error("Axios error:", err.message);
                 }
             }
-            
 
-
-            // 2️⃣ Update stock
+            // 2️⃣ Update stock for 'From' location
             try {
                 const updates = trxDetails.items
                 .map(d => ({
@@ -230,12 +264,36 @@ export default function StockTransfersPage() {
                 }))
                 .filter(u => u.quantity > 0);
 
+                if (updates.length > 0) {
+                    for (const u of updates) {
+                        await axios.post(
+                            `${import.meta.env.VITE_BACKEND_URL}/api/products/${u.productId}/reduceStock`,
+                            { locationId: u.locationId, quantity: u.quantity },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    }``
+                }
+            } catch (err) {
+                console.error("2️⃣❌ Stock update failed:", err);
+                toast.error("Failed to update stock. Please try again.");
+            }
+
+            // 3️⃣ Update 'To' location stock
+            try {
+                const updates = trxDetails.items
+                .map(d => ({
+                    productId: d.productId,
+                    locationId: trxDetails.locationToId,
+                    quantity: parseFloat(d.quantity) || 0
+                }))
+                .filter(u => u.quantity > 0);
+
 
                 if (updates.length > 0) {
                     for (const u of updates) {
                         await axios.post(
-                            `${import.meta.env.VITE_BACKEND_URL}/api/products/${u.productFromId}/addStock`,
-                            { locationFromId: u.locationId, quantity: u.quantity },
+                            `${import.meta.env.VITE_BACKEND_URL}/api/products/${u.productId}/addStock`,
+                            { locationId: u.locationId, quantity: u.quantity },
                             { headers: { Authorization: `Bearer ${token}` } }
                         );
                     }
@@ -245,7 +303,7 @@ export default function StockTransfersPage() {
                 toast.error("Failed to update stock. Please try again.");
             }
 
-            // 3️⃣ Prepare supplier updates
+            // 4️⃣ Update stock
 
             toast.success("✅ GRN submitted successfully!");
 
@@ -263,9 +321,6 @@ export default function StockTransfersPage() {
 
     const resetForm = () => {
     setTrxDetails({
-        supplierId: "",
-        supplierName: "",
-        supplierAddress: "",
         trxDate: new Date().toISOString().split("T")[0],
         referenceNumber: "",
         locationFromId: "",        // ✅ restore
@@ -277,7 +332,6 @@ export default function StockTransfersPage() {
     });
 
     setSelectedProduct(null);
-    setSelectedSupplier(null);
     setErrors({});
     setIsSubmitting(false);
     setIsSubmitted(false);
@@ -290,24 +344,6 @@ export default function StockTransfersPage() {
         setShowProduct(false);
     };
 
-    const handleCancelSupplier = () => {
-        setSelectedSupplier(null);
-        setShowSuppliers(false);
-    };
-
-    const addSupplier = () => {
-        if (!selectedSupplier) {
-            alert("Please select a supplier.");
-            return;
-        }
-        setTrxDetails((prev) => ({
-            ...prev,
-            supplierId: selectedSupplier.supplierId,
-            supplierName: selectedSupplier.name,
-            supplierAddress: selectedSupplier.address
-        }));
-        setShowSuppliers(false);
-    };
 
     return (
         <div className="w-full h-full bg-gray-100 p-6 rounded shadow">
@@ -421,7 +457,7 @@ export default function StockTransfersPage() {
 
                             </div>              
                         </div>
-                        {errors.locationFromName && <p className="text-red-500 text-xs">{errors.locationFromName}</p>}
+                        {errors.locationFromId && <p className="text-red-500 text-xs">{errors.locationFromId}</p>}
                     </div>  
 
                     {/* Location To */}
@@ -465,7 +501,7 @@ export default function StockTransfersPage() {
                     {trxDetails.items.map((item, index) => (
                     <div
                         key={index}
-                        className="flex items-center justify-between border-b py-2"
+                        className="flex items-center justify-between border-b py-2 px-4"
                     >
                         <img
                             src={item.image}
@@ -474,33 +510,35 @@ export default function StockTransfersPage() {
                         />
 
                         <div className="flex-1 px-4">
-                        <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-gray-500">{item.categoryName}</p>
-                        <p className="text-xs text-gray-500">{item.brandName} | {item.productId}</p>
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="text-xs text-gray-500">{item.categoryName}</p>
+                            <p className="text-xs text-gray-500">{item.brandName} | {item.productId}</p>
                         </div>
+                        <div className="flex">
                             <input
-                            type="number"
-                            placeholder="Qty"
-                            value={item.quantity ?? ""}
-                            onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
-                            className="w-20 p-1 text-sm border rounded"
+                                type="number"
+                                placeholder="Qty"
+                                value={item.quantity ?? ""}
+                                onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
+                                className="w-20 p-1 text-sm border rounded"
                             />
+                        </div>
+                        <span className="text-sm text-gray-500 ml-2">
+                            {/* { item.quantity } */}
+                            {
+                                item.stock.find(
+                                s => s.locationFromId === trxDetails.locationFromId
+                                )?.quantity ?? 0
+                            }
+                        </span>
 
-                            <input
-                            type="number"
-                            placeholder="Rate"
-                            value={item.rate ?? ""}
-                            onChange={(e) => handleItemChange(index, "rate", e.target.value)}
-                            className="w-20 p-1 text-sm border rounded ml-2"
-                            />
-
-                        {/* <span className="ml-2 text-sm font-medium">Rs. {item.amount.toFixed(2)}</span> */}
+                        <span className="ml-10 text-sm font-medium">{item.rate.toFixed(2)}</span>
                         <span className="ml-2 text-sm font-medium">Rs. {item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
 
                         <button
-                        onClick={() => removeItem(index)}
-                        className="ml-4 text-red-600 hover:text-white border border-red-600 rounded p-1 hover:bg-red-600"
-                        >
+                            onClick={() => removeItem(index)}
+                            className="ml-4 text-red-600 hover:text-white border border-red-600 rounded p-1 hover:bg-red-600"
+                            >
                         <FaTrash />
                         </button>
                     </div>
