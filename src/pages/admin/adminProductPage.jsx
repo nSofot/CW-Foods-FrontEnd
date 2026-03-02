@@ -73,17 +73,27 @@ export default function AdminProductsPage() {
     }
 
 	function deleteProduct(productId) {
+		const confirmed = window.confirm(
+			"Are you sure you want to delete this product? This action cannot be undone."
+		);
+
+		if (!confirmed) return;
+
 		const token = localStorage.getItem("token");
 		if (!token) {
 			toast.error("Please login first");
 			return;
 		}
+
 		axios
-			.delete(import.meta.env.VITE_BACKEND_URL + "/api/products/" + productId, {
-				headers: {
-					Authorization: "Bearer " + token,
-				},
-			})
+			.delete(
+				import.meta.env.VITE_BACKEND_URL + "/api/products/" + productId,
+				{
+					headers: {
+						Authorization: "Bearer " + token,
+					},
+				}
+			)
 			.then(() => {
 				toast.success("Product deleted successfully");
 				setIsLoading(true); // reload products
@@ -92,6 +102,7 @@ export default function AdminProductsPage() {
 				toast.error(e.response?.data?.message || "Delete failed");
 			});
 	}
+
 
 	return (
 		<div className="w-full h-full flex flex-col p-4">
@@ -155,7 +166,14 @@ export default function AdminProductsPage() {
 									<td className="px-4 py-2 text-right">{item.retailPrice.toFixed(2)}</td>
 									<td className="px-4 py-2 text-right">{item.distributorPrice.toFixed(2)}</td>
 									<td className="px-4 py-2 text-right">{item.discountRate.toFixed(2) + "%"}</td>
-									<td className="px-4 py-2 text-right">{item.stock}</td>
+									<td className="px-4 py-2 text-right font-mono">
+										{item.stock.map((s, idx) => (
+											<div key={idx}>
+												{s.locationId}: {s.quantity}
+											</div>
+										))}
+									</td>
+
 									<td className="px-4 py-2">{getUomName(item.uomId)}</td>
 									<td className="px-4 py-2">	
 										<div className="flex gap-3">
