@@ -15,12 +15,19 @@ import LocationPage from "./admin/locationsPage";
 import CustomerPage from "./admin/customerPage";
 import AddCustomerPage from "./admin/addCustomerPage";
 import EditCustomerPage from "./admin/editCustomerPage";
+import CustomerOutstandingPage from "./admin/customersOutstandingAgeAnalyzis";
 import GrnPage from "./admin/grnPage";
 import InvoicePage from "./admin/invoicePage";
+import SalesReturnPage from "./admin/salesReturnPage";
 import StockTransfersPage from "./admin/stockTransfersPage";
 import UsersPage from "./admin/usersPage";
 import AdminOrdersPage from "./admin/adminOrdersPage";
 import ReviewsPage from "./admin/reviewsPage";
+
+import CustomersOutstandingReport from "./reports/customersOutstandingReport";
+import CustomerStatementReport from "./reports/customerStatementReport";
+import CustomerOutstandingStatementReport from "./reports/customerOutstandingStatement";
+
 import Loading from "../components/loadingSpinner";
 import NotFoundPage from "./notFoundPage";
 
@@ -117,7 +124,8 @@ export default function AdminPage() {
                     {openCustomers && (
                         <div className="ml-4 flex flex-col space-y-1">
                             <Link className={getClass("customers")} to="/admin/customers">All Customers</Link>
-
+                            <Link className={getClass("add-customer")} to="/admin/add-customer">Add Customer</Link>
+                            <Link className={getClass("customer-outstanding")} to="/admin/customer-outstanding">Outstanding Analysis</Link>
                         </div>
                     )}
 
@@ -135,7 +143,7 @@ export default function AdminPage() {
                             <Link className={getClass("sales_invoice")} to="/admin/sales_invoice">Sales Invoice</Link>
                             <Link className={getClass("stock_transfer")} to="/admin/stock_transfer">Stock Transfers</Link>
                             <Link className={getClass("stock_adjustment")} to="/admin/stock_adjustment">Stock Adjustment</Link>
-                            <Link className={getClass("goods_returns")} to="/admin/goods_returns">Goods Returns</Link>
+                            <Link className={getClass("sales_return")} to="/admin/sales_return">Sales Return</Link>
                         </div>
                     )}                    
 
@@ -167,12 +175,19 @@ export default function AdminPage() {
               <Route path="customers" element={<CustomerPage />} />
               <Route path="add-customer" element={<AddCustomerPage />} />
               <Route path="edit-customer" element={<EditCustomerPage />} />
+              <Route path="customer-outstanding" element={<CustomerOutstandingPage />} />
               <Route path="grn" element={<GrnPage />} />
               <Route path="sales_invoice" element={<InvoicePage />} />
+              <Route path="sales_return" element={<SalesReturnPage />} />
               <Route path="stock_transfer" element={<StockTransfersPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
               <Route path="reviews" element={<ReviewsPage />} />
+
+              <Route path="customers-oustanding" element={<CustomersOutstandingReport />} />
+              <Route path="customer-statement" element={<CustomerStatementReport />} />
+              <Route path="customer-outstanding-statement" element={<CustomerOutstandingStatementReport />} />
+
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </main>

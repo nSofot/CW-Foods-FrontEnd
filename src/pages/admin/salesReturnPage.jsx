@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { FaTrash } from "react-icons/fa";
-import { Search, ShoppingBasket } from "lucide-react";
+import { Search, ShoppingBasket, RotateCcw } from "lucide-react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
 import ProductSelector from "../../components/productSelector";
 import CustomerSelector from "../../components/customerSelector";
-import { tr } from "framer-motion/client";
 
-export default function InvoicePage() {
+export default function SalesReturnPage() {
   const token = localStorage.getItem("token");
 
   const [trxDetails, setTrxDetails] = useState({
@@ -141,27 +140,18 @@ export default function InvoicePage() {
     if (!trxDetails.locationId) return toast.error("Select a warehouse");
     if (trxDetails.items.length === 0) return toast.error("Add at least one item");
 
-    for (const item of trxDetails.items) {
-      if (Number(item.quantity) > item.availableStock) {
-        toast.error(`Not enough stock for ${item.name}`);
-        setIsSubmitting(false);
-        toast.dismiss(toastId);
-        return;
-      }
-    }
-
     setIsSubmitting(true);
-    const toastId = toast.loading("Submitting invoice...");
+    const toastId = toast.loading("Submitting return note...");
 
     try {
       // 🔽 Add stock transaction record
       const trxData = {
-        transactionType: "invoice",
+        transactionType: "returns",
         transactionDate: trxDetails.invoiceDate,
         locationId: trxDetails.locationId,
         supplierCustomerId: trxDetails.customerId,
         description: trxDetails.invoiceNumber,
-        isAdded: false,
+        isAdded: true,
         totalAmount: trxDetails.trxTotal,
         items: trxDetails.items.map(item => ({
           productId: item.productId,
@@ -187,7 +177,7 @@ export default function InvoicePage() {
       await Promise.all(
         trxDetails.items.map(item =>
           axios.post(
-            `${import.meta.env.VITE_BACKEND_URL}/api/products/${item.productId}/reduceStock`,
+            `${import.meta.env.VITE_BACKEND_URL}/api/products/${item.productId}/addStock`,
             {
               locationId: trxDetails.locationId,
               quantity: Number(item.quantity),
@@ -200,11 +190,11 @@ export default function InvoicePage() {
       // 🔽 Add customer transaction reord
       const customerTrxData = {
         transactionId: trxId,
-        transactionType: "invoice",
+        transactionType: "returns",
         transactionDate: trxDetails.invoiceDate,
         customerId: trxDetails.customerId,
         description: trxDetails.invoiceNumber,
-        isCredit: false,
+        isCredit: true,
         amount: trxDetails.trxTotal,
         balance: trxDetails.trxTotal
       };
@@ -218,16 +208,16 @@ export default function InvoicePage() {
 
       // 🔽 Add Customer Balance
       await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/customer/${trxDetails.customerId}/addBalance`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/customer/${trxDetails.customerId}/reduceBalance`,
         { amount: trxDetails.trxTotal },
         { headers: { Authorization: `Bearer ${token}` } }
       );    
 
-      toast.success("Invoice submitted successfully");
+      toast.success("Return note submitted successfully");
       
       // resetForm(); // optional
     } catch (err) {
-      console.error("Invoice submit failed:", err.response?.data || err.message);
+      console.error("Return note submit failed:", err.response?.data || err.message);
       toast.error(err.response?.data?.message || "Submit failed");
     } finally {
       toast.dismiss(toastId);
@@ -242,13 +232,13 @@ export default function InvoicePage() {
       <div className="sticky top-0 z-20 bg-gray-100 pb-4 mb-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
-              <ShoppingBasket className="text-blue-600" />
-              Sales Invoice
-            </h1>
-            <p className="text-sm text-gray-500">
-              Create and manage customer invoices
-            </p>
+                <h1 className="text-2xl font-semibold flex items-center gap-2">
+                <RotateCcw className="text-blue-600" />
+                Sales Return Note
+                </h1>
+                <p className="text-sm text-gray-500">
+                Record customer returns and update stock balances
+                </p>
           </div>
 
           <div className="flex gap-3">
@@ -396,9 +386,9 @@ export default function InvoicePage() {
                 <p className="text-xs text-gray-500">
                     {item.brandName} | {item.unit}
                 </p>
-                <p className="text-xs text-gray-500">
+                {/* <p className="text-xs text-gray-500">
                     Stock: {item.availableStock}
-                </p>
+                </p> */}
             </div>
             </div>
 
