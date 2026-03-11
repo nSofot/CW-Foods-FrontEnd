@@ -1133,7 +1133,7 @@ const normaliseBanks = (raw) => {
                                                 ...prev,
                                                 customerTitle: customer.title,
                                                 customerId: customer.customerId,
-                                                customerName: customer.name,
+                                                customerName: customer.businessName,
                                                 customerMobile: customer.mobile,
                                                 customerAddress: customer.address,
                                                 customerBalance: customer.balance
@@ -1141,7 +1141,7 @@ const normaliseBanks = (raw) => {
                                         }}
                                     >
                                         <td className="py-3 px-4 w-20 truncate">{customer.customerId}</td>
-                                        <td className="py-3 px-4 w-40 truncate">{customer.name}</td>
+                                        <td className="py-3 px-4 w-40 truncate">{customer.businessName}</td>
                                         <td className="py-3 px-4 w-32 truncate">{customer.mobile}</td>
                                         <td className="py-3 px-4 w-64 truncate">{customer.address}</td>
                                         <td className="py-3 px-4 w-64 truncate">
